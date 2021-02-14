@@ -1,0 +1,12 @@
+{
+  "projects": {
+    "asowumni-mgmt": {
+      "schemaPath": "src/graphql/schema.graphql",
+      "extensions": {
+        "endpoints": {
+          "local": "http://localhost:9797/graphql"
+        }
+      }
+    }
+  }
+}

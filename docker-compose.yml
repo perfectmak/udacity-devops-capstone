@@ -1,0 +1,15 @@
+version: '3.4'
+services:
+  transaction_mgmt:
+    build: ./
+    ports:
+      - "9002:9797"
+    environment: 
+      NODE_ENV: "production"
+    env_file: 
+      - ".env"
+    logging:
+      driver: syslog
+      options:
+        syslog-address: "udp://logs7.papertrailapp.com:35487"
+        tag: "{{.Name}}/{{.ID}}"

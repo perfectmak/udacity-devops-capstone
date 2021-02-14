@@ -1,0 +1,165 @@
+""" from https://github.com/excitement-engineer/graphql-iso-date """
+scalar Date
+
+type PageInfo {
+  hasNextPage: Boolean
+  hasPreviousPage: Boolean
+  startCursor: String
+  endCursor: String
+}
+
+enum ConnectionOrderDirection {
+  asc
+  desc
+}
+
+type AuthPayload {
+  user: User
+  accessToken: String
+  refreshToken: String
+}
+
+type User {
+  id: Int!
+  email: String!
+  firstName: String
+  lastName: String
+}
+
+enum TransactionType {
+  EXPENSE,
+  INCOME
+}
+
+enum QuantityUnit {
+  Yard,
+  Unit,
+  Pack,
+  Set,
+  Roll
+}
+
+enum TransactionConnectionOrderBy {
+  date
+  createdAt
+}
+
+type TransactionEdge {
+  cursor: String!
+  node: Transaction!
+}
+
+type TransactionConnection {
+  pageInfo: PageInfo!
+  totalCount: Int
+  edges: [TransactionEdge!]!
+}
+
+type Category {
+  id: Int!
+  title: String!
+  type: TransactionType!,
+  createdBy: User,
+  createdAt: Date
+}
+
+type Transaction {
+  id: Int!,
+  title: String!,
+  amount: Int!,
+  type: TransactionType!,
+  category: Category!,
+  createdBy: User!,
+  date: Date!,
+  quantity: Float,
+  quantityUnit: QuantityUnit,
+  description: String,
+  createdAt: Date!,
+}
+
+input CreateTransactionInput {
+  title: String!
+  amount: Int!
+  type: TransactionType!,
+  categoryId: Int!,
+  date: Date!,
+  quantity: Float,
+  quantityUnit: QuantityUnit,
+  description: String
+}
+
+input EditTransactionInput {
+  title: String
+  amount: Int
+  type: TransactionType,
+  categoryId: Int,
+  date: Date,
+  quantity: Float,
+  quantityUnit: QuantityUnit,
+  description: String
+}
+
+input TransactionConnectionFilter {
+  OR: [TransactionConnectionFilter!]
+  AND: [TransactionConnectionFilter!]
+  id_eq: Int,
+  id_in: [Int!],
+  date_eq: Date,
+  date_gt: Date,
+  date_gte: Date,
+  date_lt: Date,
+  date_lte: Date,
+  type_eq: TransactionType
+  title_eq: String,
+  title_contains: String,
+  description_eq: String,
+  description_contains: String,
+  amount_eq: Int,
+  quantity_eq: Float,
+  quantityUnit_eq: QuantityUnit,
+  quantityUnit_in: [QuantityUnit!],
+  createdBy_eq: Int,
+  categoryId_eq: Int,
+  categoryId_in: [Int!],
+}
+
+type MonthSummaryPayload {
+  date: Date,
+  totalIncome: Int,
+  totalExpense: Int,
+  totalProfit: Int,
+}
+
+type TransactionCategoryBreakdown {
+  title: String!
+  amount: Int!,
+  count: Int!,
+}
+
+extend type Query {
+  getCategories(type: TransactionType!): [Category!]!
+  transactionConnection(
+    first: Int = 10
+    after: String
+    last: Int
+    before: String
+    where: TransactionConnectionFilter
+    orderBy: TransactionConnectionOrderBy = date
+    orderDirection: ConnectionOrderDirection = desc
+  ): TransactionConnection!
+
+  # analytics queries
+  monthSummary(date: Date!): MonthSummaryPayload!
+  yearSummary(date: Date!): [MonthSummaryPayload!]!
+  "Breakdown Month transactions by type"
+  monthBreakdown(date: Date!, type: TransactionType): [TransactionCategoryBreakdown!]!
+
+}
+
+extend type Mutation {
+  login(email: String!, password: String!): AuthPayload!
+  createCategory(title: String!, type: TransactionType): Category!
+  createTransaction(input: CreateTransactionInput!): Transaction!
+  editTransaction(id: Int!, input: EditTransactionInput!): Transaction!
+  deleteTransaction(id: Int!): Transaction!
+}
