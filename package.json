@@ -13,7 +13,8 @@
     "test:integration": "NODE_ENV=test jest tests/integration/* --runInBand",
     "test:integration:watch": "npm run integration --watch",
     "test": "npm run test:unit && npm run test:integration",
-    "lint": "./node_modules/.bin/eslint . --fix --cache",
+    "lint:fix": "./node_modules/.bin/eslint . --fix --cache",
+    "lint": "./node_modules/.bin/eslint .",
     "start:frontend": "cd frontend && npm start"
   },
   "author": "Perfect Makanju",

@@ -94,10 +94,14 @@ jobs:
       - restore_cache:
           keys: [frontend-build]
       - run:
+          name: Frontend Lint Test
+          command: |
+            cd ~/project/frontend
+            npm run lint
+      - run:
           name: Frontend Unit test
           command: |
-            cd frontend
-            npm install
+            cd ~/project/frontend
             npm run test
 
   test-backend:
@@ -108,9 +112,12 @@ jobs:
       - restore_cache:
           keys: [backend-build]
       - run:
+          name: Backend Lint test
+          command: |
+            npm run lint
+      - run:
           name: Backend Unit test
           command: |
-            npm install
             npm run test
   
   scan-frontend:
@@ -123,7 +130,7 @@ jobs:
       - run:
           name: Scan frontend dependencies
           command: |
-            cd frontend
+            cd ~/project/frontend
             npm audit --audit-level=critical
 
   scan-backend:
