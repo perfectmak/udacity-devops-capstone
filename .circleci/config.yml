@@ -97,11 +97,13 @@ jobs:
           name: Frontend Lint Test
           command: |
             cd ~/project/frontend
+            npm install
             npm run lint
       - run:
           name: Frontend Unit test
           command: |
             cd ~/project/frontend
+            npm install
             npm run test
 
   test-backend:
@@ -114,10 +116,12 @@ jobs:
       - run:
           name: Backend Lint test
           command: |
+            npm install
             npm run lint
       - run:
           name: Backend Unit test
           command: |
+            npm install
             npm run test
   
   scan-frontend:

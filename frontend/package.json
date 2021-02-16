@@ -11,6 +11,7 @@
     "@nivo/bar": "^0.59.2",
     "@svgr/webpack": "4.3.2",
     "@typescript-eslint/eslint-plugin": "1.13.0",
+    "@typescript-eslint/parser": "^1.13.0",
     "apollo-boost": "^0.4.4",
     "babel-eslint": "10.0.2",
     "babel-jest": "^24.8.0",
@@ -75,6 +76,7 @@
     "style-loader": "1.0.0",
     "terser-webpack-plugin": "1.4.1",
     "ts-pnp": "1.1.2",
+    "typescript": "^4.1.5",
     "url-loader": "2.1.0",
     "use-query-params": "^0.4.1",
     "webpack": "4.39.1",
@@ -158,8 +160,5 @@
       "react-app"
     ]
   },
-  "devDependencies": {
-    "@typescript-eslint/parser": "^1.13.0",
-    "typescript": "^4.1.5"
-  }
+  "devDependencies": {}
 }
