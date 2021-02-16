@@ -2,7 +2,7 @@
 
 [![CircleCI](https://circleci.com/gh/perfectmak/udacity-devops-capstone.svg?style=svg)](https://circleci.com/gh/perfectmak/udacity-devops-capstone)
 
-> This is my capstone project for the Udacity DevOps Nanodegree Program.
+> This is my capstone project for the Udacity DevOps Nanodegree Program. Checkout the [infra](./infra) directory for more DevOps related details.
 
 The Transaction Management Portal is a simple application for logging and viewing income and expense transactions
 for a business.
@@ -40,7 +40,7 @@ Next, set environment variable `DB_URL` as the Postgres URL. The application wou
 
 > Checkout the `.env.sample` for other environment variables that need to be set.
 
-Next, run database migrations using `npm run knex migrate:latest --env development`. Change the env to `production` for production configurations (see knexfile.js for each environment configuration)
+Next, run database migrations using `npm run knex migrate:latest -- --env development`. Change the env to `production` for production configurations (see knexfile.js for each environment configuration)
 
 **Run the application (natively)**
 

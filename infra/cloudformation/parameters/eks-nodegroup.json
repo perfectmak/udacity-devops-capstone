@@ -1,0 +1,22 @@
+[
+  {
+    "ParameterKey": "ClusterName",
+    "ParameterValue": "TxMgmtEksCluster"
+  },
+  {
+    "ParameterKey": "KeyName",
+    "ParameterValue": "udacity"
+  },
+  {
+    "ParameterKey": "NodeImageId",
+    "ParameterValue": "ami-019502a74ddee4812"
+  },
+  {
+    "ParameterKey": "NodeInstanceType",
+    "ParameterValue": "t3.small"
+  },
+  {
+    "ParameterKey": "NodeGroupName",
+    "ParameterValue": "TxMgmtEksNodeGroup"
+  }
+]

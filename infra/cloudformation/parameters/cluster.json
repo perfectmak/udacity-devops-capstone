@@ -1,0 +1,10 @@
+[
+  {
+    "ParameterKey": "ClusterName",
+    "ParameterValue": "TxMgmtEksCluster"
+  },
+  {
+    "ParameterKey": "EksClusterRole",
+    "ParameterValue": "arn:aws:iam::394872240698:role/EKSClusterManagementRole"
+  }
+]

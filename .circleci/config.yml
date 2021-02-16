@@ -1,0 +1,337 @@
+version: 2.1
+
+commands:
+  destroy-environments:
+    description: Destroy frontend and backend cloudformation stacks for workflow
+    parameters:
+      id:
+        type: string
+    steps:
+    - run:
+        name: Destroy environments
+        when: on_fail
+        command: |
+          aws cloudformation delete-stack --stack-name txmgmt-backend-<< parameters.id >>
+          if [[ $(aws s3 ls s3://txmgmt-<< parameters.id >> 2>&1 | grep -c 'NoSuchBucket') = 0 ]]; then
+            aws s3 rm s3://txmgmt-<< parameters.id >> --recursive
+          fi
+          aws cloudformation delete-stack --stack-name txmgmt-frontend-<< parameters.id >>
+
+  revert-migrations:
+    description: Revert the last migration if successfully run in the current workflow.
+    parameters:
+      key:
+        type: string 
+    steps:
+      - run:
+          name: Revert migrations
+          when: on_fail
+          command: |
+            SUCCESS=$(curl -H "token: ${MEMSTASH_TOKEN}" --request GET https://api.memstash.io/values/migrations-<< parameters.key >>)
+            if [[ $SUCCESS == "1" ]]; 
+            then
+              cd ~/project
+              npm install
+              npm run migrations:revert
+            fi
+
+  setup-aws-cli:
+    description: Download and installs aws cli v2
+    steps:
+      - run: sudo apt-get update && sudo apt-get install -yy less
+      - run: curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+      - run: unzip awscliv2.zip
+      - run: sudo ./aws/install
+      - run: aws --version
+
+  export-backend-url:
+    description: Exports backends url as API_URL
+    steps:
+      - run: |
+          echo "export API_URL=http://$(aws ec2 describe-instances --query 'Reservations[*].Instances[*].PublicIpAddress' --filters Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID} --output text):3030" >> $BASH_ENV
+          echo "export REACT_APP_API_URL=${API_URL}" >> $BASH_ENV
+
+
+jobs:
+  build-frontend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [frontend-build]
+      - run:
+          name: Build front-end
+          command: |
+            cd frontend
+            npm install
+            npm run build
+      - save_cache:
+          paths: [frontend/node_modules]
+          key: frontend-build 
+
+  build-backend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Back-end build
+          command: |
+            npm install
+            npm run build
+      - save_cache:
+          paths: [node_modules]
+          key: backend-build
+  
+  test-frontend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [frontend-build]
+      - run:
+          name: Frontend Unit test
+          command: |
+            cd frontend
+            npm install
+            npm run test
+
+  test-backend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Backend Unit test
+          command: |
+            npm install
+            npm run test
+  
+  scan-frontend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [frontend-build]
+      - run:
+          name: Scan frontend dependencies
+          command: |
+            cd frontend
+            npm audit --audit-level=critical
+
+  scan-backend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Scan backend dependencies
+          command: |
+            npm audit --audit-level=critical
+  
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - setup-aws-cli
+      - restore_cache:
+          keys: [backend-build]
+      - run:
+          name: Run migrations
+          command: |
+            npm install
+            if [[ $(npm run migrations) == *"has been executed successfully"* ]]; then
+              export MIGRATION_SUCCESS=1
+            fi
+      - run:
+          name: Send migration results to memstash
+          command: |
+            if [[ $MIGRATION_SUCCESS==1 ]]; then
+              curl -H "Content-Type: text/plain" -H "token: ${MEMSTASH_TOKEN}" \
+                --request PUT \
+                --data "1" \
+                https://api.memstash.io/values/migrations-${CIRCLE_WORKFLOW_ID}
+            fi
+      - revert-migrations:
+          key: ${CIRCLE_WORKFLOW_ID}
+      - destroy-environments:
+          id: ${CIRCLE_WORKFLOW_ID}
+
+  deploy-frontend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - setup-aws-cli
+      - export-backend-url
+      - restore_cache:
+          keys: [frontend-build]
+      - run:
+          name: Deploy frontend objects
+          command: |
+            cd frontend
+            npm install
+            npm run build
+            aws s3 cp ./build/ s3://txmgmt-${CIRCLE_WORKFLOW_ID} --recursive
+      - revert-migrations:
+          key: ${CIRCLE_WORKFLOW_ID}
+      - destroy-environments:
+          id: ${CIRCLE_WORKFLOW_ID}
+
+  deploy-backend:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - setup-aws-cli
+      - add_ssh_keys:
+          fingerprints: ["85:04:5d:1e:45:84:19:22:0b:93:f3:f8:86:ed:17:4e"]
+      - run:
+          name: Install ansible
+          command: sudo apt-get install -yy ansible
+      - run:
+          name: Install rsync for deployment
+          command: sudo apt-get install -yy rsync
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Back-end build
+          command: |
+            cd ~/project
+            npm install
+            npm run build
+      - run:
+          name: Deploy backend
+          command: |
+            cd ~/project/.circleci/ansible
+            ansible-playbook -i inventory.txt deploy-backend.yml
+          no_output_timeout: 30m
+      - revert-migrations:
+          key: ${CIRCLE_WORKFLOW_ID}
+      - destroy-environments:
+          id: ${CIRCLE_WORKFLOW_ID}
+  
+  smoke-test:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - setup-aws-cli
+      - export-backend-url
+      - run:
+          name: Backend smoke test.
+          command: |
+            echo "${API_URL}"
+            if curl -s ${API_URL}/graphql
+            then
+              exit 0
+            else
+              exit 1
+            fi
+      - run:
+          name: Frontend smoke test.
+          command: |
+            APP_URL=http://txmgmt-${CIRCLE_WORKFLOW_ID}.s3-website-${AWS_DEFAULT_REGION}.amazonaws.com
+            if curl -s ${APP_URL} | grep "Transaction Mgmt"
+            then
+              exit 0
+            else
+              exit 1
+            fi
+      - destroy-environments:
+          id: ${CIRCLE_WORKFLOW_ID}
+      - revert-migrations:
+          key: ${CIRCLE_WORKFLOW_ID}
+
+  cloudfront-update:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - setup-aws-cli
+      - run:
+          name: Cache Old Workflow Id
+          command: |
+            OldWorkflowID=$(aws cloudformation list-exports \
+              --query "Exports[?Name==\`WorkflowID\`].Value" \
+              --no-paginate --output text)
+
+            curl -H "Content-Type: text/plain" -H "token: ${MEMSTASH_TOKEN}" \
+              --request PUT \
+              --data "${OldWorkflowID}" \
+              https://api.memstash.io/values/old-id-${CIRCLE_WORKFLOW_ID}
+      - run:
+          name: Update cloudfront distribution
+          command: |
+            aws cloudformation update-stack \
+            --template-body=file://infra/cloudformation/cloudfront.yml \
+            --stack-name=txmgmt-cloudfront \
+            --parameters=ParameterKey=WorkflowID,ParameterValue=${CIRCLE_WORKFLOW_ID}
+      - revert-migrations:
+          key: ${CIRCLE_WORKFLOW_ID}
+      - destroy-environments:
+          id: ${CIRCLE_WORKFLOW_ID}
+
+  cleanup:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - run:
+          name: Remove old stacks and files
+          command: |
+            OldWorkflowID=$(curl -H "token: ${MEMSTASH_TOKEN}" \
+              --request GET https://api.memstash.io/values/old-id-${CIRCLE_WORKFLOW_ID})
+
+            STACKS=($(aws cloudformation list-stacks \
+              --query "StackSummaries[*].StackName" \
+              --stack-status-filter CREATE_COMPLETE \
+              --no-paginate --output text))
+
+            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+            then
+              aws cloudformation delete-stack --stack-name "txmgmt-backend-${OldWorkflowID}"
+              aws s3 rm "s3://txmgmt-${OldWorkflowID}" --recursive
+              aws cloudformation delete-stack --stack-name "txmgmt-frontend-${OldWorkflowID}"
+            fi
+
+
+workflows:
+  default:
+    jobs:
+      - build-frontend
+      - build-backend
+      - test-frontend:
+          requires: [build-frontend]
+      - test-backend:
+          requires: [build-backend]
+      - scan-backend:
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]
+      # - configure-infrastructure:
+      #     requires: [test-frontend, test-backend, scan-frontend, scan-backend]
+      #     filters:
+      #       branches:
+      #         only: [production]
+      # - run-migrations:
+      #     requires: [configure-infrastructure]
+      # - deploy-frontend:
+      #     requires: [run-migrations]
+      # - deploy-backend:
+      #     requires: [run-migrations]
+      # - smoke-test:
+      #     requires: [deploy-backend, deploy-frontend]
+      # - cloudfront-update:
+      #     requires: [smoke-test]
+      # - cleanup:
+      #     requires: [cloudfront-update]
