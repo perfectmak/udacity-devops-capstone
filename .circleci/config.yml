@@ -9,7 +9,8 @@ commands:
       - kubernetes/install-kubectl
       - run:
           name: Login to Kube config
-          command: aws eks --region ${AWS_DEFAULT_REGION} update-kubeconfig --name ${CLUSTER_NAME}
+          command: |
+            aws eks --region ${AWS_DEFAULT_REGION} update-kubeconfig --name ${CLUSTER_NAME}
 
   destroy-environments:
     description: Destroy kubernetes deployments if any
@@ -197,6 +198,7 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
+      - setup_remote_docker
       - setup-aws-cli
       - setup-kubectl
       - run:
@@ -210,6 +212,8 @@ jobs:
       - run:
           name: Deploy backend
           command: |
+            ls /home/circleci/.kube/
+            cat /home/circleci/.kube/config
             sed 's/{{ .DeploymentId }}/${CIRCLE_WORKFLOW_ID}/g' ~/project/infra/kubernetes/backend-deployment.yml | kubectl apply -f -
           no_output_timeout: 30m
       - revert-migrations:
@@ -222,6 +226,7 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
+      - setup_remote_docker
       - setup-aws-cli
       - setup-kubectl
       - export-backend-url:
@@ -252,6 +257,7 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
+      - setup_remote_docker
       - setup-aws-cli
       - setup-kubectl
       - export-backend-url:
@@ -286,6 +292,7 @@ jobs:
       - image: circleci/node:13.8.0
     steps:
       - checkout
+      - setup_remote_docker
       - setup-aws-cli
       - setup-kubectl
       - run:
@@ -313,6 +320,7 @@ jobs:
     docker:
       - image: amazon/aws-cli
     steps:
+      - setup_remote_docker
       - setup-kubectl
       - run:
           name: Remove old stacks and files
