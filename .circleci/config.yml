@@ -23,7 +23,7 @@ commands:
         when: on_fail
         command: |
           if [[ $(kubectl get deployment/server-<< parameters.id >>) ]]; then
-            sed 's/{{ .DeploymentId }}/<< parameters.id >>/g' ~/project/infra/kubernetes/backend-deployment.yml | kubectl delete -f -
+            sed -e "s/{{ .DeploymentId }}/<< parameters.id >>/g" ~/project/infra/kubernetes/backend-deployment.yml | kubectl delete -f -
           fi
           
           if [[ $(aws s3 ls s3://txmgmt-<< parameters.id >> 2>&1 | grep -c 'NoSuchBucket') = 0 ]]; then
@@ -212,9 +212,7 @@ jobs:
       - run:
           name: Deploy backend
           command: |
-            ls /home/circleci/.kube/
-            cat /home/circleci/.kube/config
-            sed 's/{{ .DeploymentId }}/${CIRCLE_WORKFLOW_ID}/g' ~/project/infra/kubernetes/backend-deployment.yml | kubectl apply -f -
+            sed -e "s/{{ .DeploymentId }}/${CIRCLE_WORKFLOW_ID}/g" ~/project/infra/kubernetes/backend-deployment.yml | kubectl apply -f -
           no_output_timeout: 30m
       - revert-migrations:
           key: ${CIRCLE_WORKFLOW_ID}
@@ -335,11 +333,10 @@ jobs:
 
             if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
             then
-              sed 's/{{ .DeploymentId }}/${OldWorkflowID}/g' ~/project/infra/kubernetes/backend-deployment.yml | kubectl delete -f -
+              sed -e "s/{{ .DeploymentId }}/${OldWorkflowID}/g" ~/project/infra/kubernetes/backend-deployment.yml | kubectl delete -f -
               aws s3 rm "s3://txmgmt-${OldWorkflowID}" --recursive
               aws cloudformation delete-stack --stack-name "TxMgmtFrontend-${OldWorkflowID}"
             fi
-
 
 workflows:
   default:
