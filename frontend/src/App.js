@@ -1,6 +1,6 @@
 import React, { Suspense, lazy } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Route, Switch } from 'react-router';
+import { Route, Switch, Redirect } from 'react-router';
 import { ConnectedRouter } from 'connected-react-router';
 import { createMuiTheme, makeStyles } from '@material-ui/core/styles';
 import { ThemeProvider } from '@material-ui/styles';
@@ -9,7 +9,7 @@ import { QueryParamProvider } from 'use-query-params';
 
 import { userIsLoggedIn, logoutUser } from './actions/user';
 import { Header } from './components/Header/Header';
-import { NotFoundPage } from './components/NotFoundPage';
+// import { NotFoundPage } from './components/NotFoundPage';
 
 const DashboardPage = lazy(() => import('./pages/DashboardPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
@@ -57,7 +57,9 @@ const App = (props) => {
                       <Route key="new-transaction" path="/transactions/new" component={CreateTransactionPage} exact={true} />
                       <Route key="view-transaction" path="/transactions/:id/edit" component={EditTransactionPage} exact={true} />
                       <Route key="view-transaction" path="/transactions/:id" component={TransactionDetailPage} exact={true} />
-                      <Route key="notFound" path="*" component={NotFoundPage} is404={true} />
+                      <Route key="notFound" path="*">
+                        <Redirect to="/" />
+                      </Route>
                     </Switch>
                   </Suspense>
                 </Grid>

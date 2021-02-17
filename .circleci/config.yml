@@ -66,8 +66,7 @@ commands:
     steps:
       - run: |
           echo "export API_URL=http://$(kubectl get service/service-<< parameters.id >> --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}')" >> $BASH_ENV
-          echo "export REACT_APP_API_URL=${API_URL}" >> $BASH_ENV
-
+          echo "export REACT_APP_API_URL=http://$(kubectl get service/service-<< parameters.id >> --output=jsonpath='{.status.loadBalancer.ingress[0].hostname}')" >> $BASH_ENV
 
 jobs:
   build-frontend:
@@ -243,6 +242,7 @@ jobs:
           command: |
             cd frontend
             npm install
+            echo ${REACT_APP_API_URL}
             npm run build
             aws s3 cp ./build/ s3://txmgmt-${CIRCLE_WORKFLOW_ID} --recursive
       - revert-migrations:
