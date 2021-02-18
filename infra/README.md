@@ -1,8 +1,8 @@
-## Infrastructure 
+## Infrastructure Overview
 
 The application is deployed to AWS.
 
-[!image-of-infra](path/to/img.jpg)
+![Infrastructure Diagram](infra.jpg)
 
 For simplicity, I'm putting the worker nodes on the same public subnets as the control plane, but ideally, the workers should be on a private subnet interacting with control plane within the same vpc.
 
