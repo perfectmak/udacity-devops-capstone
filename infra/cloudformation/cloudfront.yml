@@ -24,7 +24,7 @@ Resources:
     Properties:
       DistributionConfig:
         Origins:
-          - DomainName: !Sub "txmgmt-${WorkflowID}.s3.{S3BucketRegion}.amazonaws.com"
+          - DomainName: !Sub "txmgmt-${WorkflowID}.s3.${S3BucketRegion}.amazonaws.com"
             Id: webpage
             S3OriginConfig:
               OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
