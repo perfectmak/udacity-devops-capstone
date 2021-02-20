@@ -5,6 +5,10 @@ Parameters:
   WorkflowID:
     Description: Unique identifier.
     Type: String
+  S3BucketRegion:
+    Description: Region where the bucket is deployed.
+    Type: String
+    Default: us-west-2
 
 
 Resources:
@@ -20,7 +24,7 @@ Resources:
     Properties:
       DistributionConfig:
         Origins:
-          - DomainName: !Sub "txmgmt-${WorkflowID}.s3.amazonaws.com"
+          - DomainName: !Sub "txmgmt-${WorkflowID}.s3.{S3BucketRegion}.amazonaws.com"
             Id: webpage
             S3OriginConfig:
               OriginAccessIdentity: !Sub "origin-access-identity/cloudfront/${CloudFrontOriginAccessIdentity}"
