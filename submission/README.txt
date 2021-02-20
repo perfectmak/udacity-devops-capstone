@@ -39,5 +39,10 @@ Screenshots can be found in the repository at this path: https://github.com/perf
 - `1 Deployment Pipeline.png`: Contains a screenshot of the Circle CI deployment Pipeline.
 - `2 CI Linting Backend.png`: Screenshot of linting backend code before running tests in a CI Job.
 - `3 CI Linting Frontend.png`: Screenshot of linting frontend code before running tests in a CI Job.
-- `4 CI Building Docker Image.png`: Screenshot of building a docker image during a backend CI deployment Job.
-- `5 CI Update Cloudfront Origin.png`: Shows CI Job step that updates cloudfront distributed to complete blue/green deployment.
+- `4 CI Linting Failed Pipeline.png`: Screenshot of pipeline stopping due to failed test step.
+- `5 CI Linting Failed Job.png`: Screenshot showing the specific failed job step.
+- `6 CI Building Docker Image.png`: Screenshot of building a docker image during a backend CI deployment Job.
+- `7.1 Blue Deployment Active,png`: Screenshot of current live deployment before new release
+- `7.2 Blue Green Deployments Active.png`: Screenshot of both blue and green deployments. The green deployment is undergoing smoke test here.
+- `7.3 Green Deployment Active.png`: Screenshot Green Deployment now active, the blue (previous) deployment has been stopped.
+- `7.4 CI Update Cloudfront Origin.png`: Shows CI Job step that updates cloudfront distributed to complete blue/green deployment.
