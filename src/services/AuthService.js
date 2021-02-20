@@ -4,7 +4,7 @@ export class AuthService {
   constructor({
     models,
   }) {
-    this.models = models;
+    this.models = models
   }
 
   async login(email, password) {
